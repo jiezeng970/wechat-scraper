@@ -32,7 +32,7 @@ def fetch_articles(cookie, user_agent, token, fakeid_list, delay_range=(1, 2)):
             "type": "9",
         }
 
-        time.sleep(random.randint(*delay_range))
+      #  time.sleep(random.randint(*delay_range))
 
         try:
             full_url = url + "?" + urllib.parse.urlencode(params)
