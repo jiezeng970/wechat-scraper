@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "src": "api/fetch_articles.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/fetch_articles",
+      "dest": "api/fetch_articles.py"
+    }
+  ]
+}
