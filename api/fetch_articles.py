@@ -1,15 +1,13 @@
 from fastapi import FastAPI, Request
-import urllib.request
-import urllib.parse
+import requests
 import json
-import time
-import random
-import ssl
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 app = FastAPI()
-ssl._create_default_https_context = ssl._create_unverified_context
 
-def fetch_articles(cookie, user_agent, token, fakeid_list, delay_range=(1, 2)):
+def fetch_articles(cookie, user_agent, token, fakeid_list):
     url = "https://mp.weixin.qq.com/cgi-bin/appmsg"
     headers = {
         "Cookie": cookie,
@@ -32,19 +30,22 @@ def fetch_articles(cookie, user_agent, token, fakeid_list, delay_range=(1, 2)):
             "type": "9",
         }
 
-      #  time.sleep(random.randint(*delay_range))
-
         try:
-            full_url = url + "?" + urllib.parse.urlencode(params)
-            req = urllib.request.Request(full_url, headers=headers)
-            with urllib.request.urlopen(req) as response:
-                content = response.read().decode()
-                data = json.loads(content)
-                links = [item["link"] for item in data.get("app_msg_list", [])]
-                results.append({
-                    "fakeid": fakeid,
-                    "articles": links
-                })
+            resp = requests.get(
+                url,
+                headers=headers,
+                params=params,
+                timeout=4,
+                verify=False
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            links = [item["link"] for item in data.get("app_msg_list", [])]
+            results.append({
+                "fakeid": fakeid,
+                "articles": links,
+                "error": None
+            })
         except Exception as e:
             results.append({
                 "fakeid": fakeid,
@@ -58,9 +59,16 @@ def fetch_articles(cookie, user_agent, token, fakeid_list, delay_range=(1, 2)):
 async def handle(request: Request):
     body = await request.json()
     cookie = body.get("cookie", "")
-    user_agent = body.get("user_agent", "")
+    user_agent = body.get("user_agent") or "Mozilla/5.0"
     token = body.get("token", "")
     fakeid_list = body.get("fakeid_list", [])
+
     if not all([cookie, token, fakeid_list]):
-        return {"error": "Missing cookie, token or fakeid_list"}
-    return {"urls": fetch_articles(cookie, user_agent, token, fakeid_list)}
+        return {"status": "error", "message": "Missing cookie, token or fakeid_list"}
+
+    results = fetch_articles(cookie, user_agent, token, fakeid_list)
+    return {
+        "status": "ok",
+        "count": len(results),
+        "results": results
+    }
