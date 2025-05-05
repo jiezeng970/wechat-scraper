@@ -58,7 +58,7 @@ def fetch_articles(cookie, user_agent, token, fakeid_list, delay_range=(1, 2)):
 async def handle(request: Request):
     body = await request.json()
     cookie = body.get("cookie", "")
-    user_agent = body.get("user_agent", "Mozilla/5.0")
+    user_agent = body.get("user_agent", "")
     token = body.get("token", "")
     fakeid_list = body.get("fakeid_list", [])
     if not all([cookie, token, fakeid_list]):
